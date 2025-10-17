@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Japanese Game Room</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+
+        .buzzer { transition: all 0.1s ease-in-out; }
+        .buzzer:active { transform: scale(0.95); box-shadow: 0 0 10px rgba(255, 0, 0, 0.7); }
+
+        .option-btn { transition: background-color 0.2s; }
+
+        .correct { background-color: #28a745 !important; color: white !important; }
+        .incorrect { background-color: #dc3545 !important; color: white !important; }
+    </style>
+</head>
+
+<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen">
+
+    <div id="game-container" class="w-full max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-lg text-center">
+        <h1 class="text-3xl font-bold mb-2">Japanese Quiz Game</h1>
+        <p class="text-gray-500 mb-4">Room Code: <code id="room-code"
+                class="bg-gray-200 px-2 py-1 rounded">{{ room_code }}</code></p>
+
+        <div id="status" class="mb-6 text-lg font-semibold text-blue-600">
+            Waiting for another player...
+        </div>
+
+        <div id="scores" class="hidden flex justify-around mb-6 text-xl">
+            <p>Your Score: <span id="my-score">0</span></p>
+            <p>Opponent's Score: <span id="opponent-score">0</span></p>
+        </div>
+
+        <div id="question-area" class="hidden min-h-[200px] flex flex-col justify-center">
+            <p id="sentence" class="text-4xl font-semibold my-8"></p>
+            <p id="countdown" class="text-6xl font-bold text-red-500 my-4"></p>
+        </div>
+
+        <div id="buzzer-area" class="hidden my-8">
+            <button id="buzzer"
+                class="buzzer w-48 h-48 bg-red-500 hover:bg-red-600 text-white font-bold rounded-full text-4xl shadow-2xl flex items-center justify-center mx-auto disabled:opacity-50 disabled:cursor-not-allowed">
+                BUZZ!
+            </button>
+        </div>
+
+        <div id="options-area" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+        <div id="result-area" class="text-2xl font-bold mt-6"></div>
+
+    </div>
+
+    <script>
+        const roomCode = document.getElementById('room-code').textContent;
+        const statusDiv = document.getElementById('status');
+        const questionArea = document.getElementById('question-area');
+        const sentenceP = document.getElementById('sentence');
+        const countdownP = document.getElementById('countdown');
+        const buzzerArea = document.getElementById('buzzer-area');
+        const buzzerBtn = document.getElementById('buzzer');
+        const optionsArea = document.getElementById('options-area');
+        const resultArea = document.getElementById('result-area');
+        const scoresDiv = document.getElementById('scores');
+        const myScoreSpan = document.getElementById('my-score');
+        const opponentScoreSpan = document.getElementById('opponent-score');
+
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const gameSocket = new WebSocket(`${protocol}://${window.location.host}/ws/game/${roomCode}/`);
+
+        let myId = null;
+        let currentBuzzerPlayer = null;
+
+        gameSocket.onmessage = function (e) {
+            const data = JSON.parse(e.data);
+            const type = data.type;
+
+            switch (type) {
+                case 'player_update':
+                    statusDiv.textContent = `Waiting for another player... (${data.player_count}/2)`;
+                    if (data.player_count === 2) {
+                        statusDiv.textContent = 'Two players connected. Starting game...';
+                    }
+                    break;
+
+                case 'round_starting':
+                    myId = data.my_id;
+                    resetRoundUI();
+                    statusDiv.classList.add('hidden');
+                    scoresDiv.classList.remove('hidden');
+                    questionArea.classList.remove('hidden');
+                    sentenceP.textContent = "";
+                    countdownP.textContent = 'Get Ready...';
+                    updateScores(data.scores);
+                    break;
+
+                case 'countdown_tick':
+                    countdownP.textContent = data.count;
+                    break;
+
+                case 'new_question':
+                    countdownP.textContent = 'GO!';
+                    setTimeout(() => countdownP.textContent = '', 500);
+                    sentenceP.textContent = data.question.sentence;
+                    buzzerArea.classList.remove('hidden');
+                    updateScores(data.scores);
+                    currentBuzzerPlayer = null;
+                    break;
+
+                case 'buzzer_activated':
+                    currentBuzzerPlayer = data.player_id;
+                    buzzerBtn.disabled = true;
+                    buzzerBtn.textContent = '...';
+
+                    if (data.player_id === myId) {
+                        statusDiv.textContent = 'You hit the buzzer! Answer now.';
+                        statusDiv.classList.remove('hidden');
+                        displayOptions(data.question.options);
+                    } else {
+                        statusDiv.textContent = 'Opponent hit the buzzer!';
+                        statusDiv.classList.remove('hidden');
+                    }
+                    break;
+
+                case 'round_result':
+                    updateScores(data.scores);
+                    showRoundResult(data);
+                    break;
+
+                case 'next_round_tick':
+                    resultArea.textContent = `Next round starting in ${data.count}...`;
+                    resultArea.className = "text-2xl font-bold mt-6 text-blue-500";
+                    break;
+            }
+        };
+
+        buzzerBtn.addEventListener('click', () => {
+            gameSocket.send(JSON.stringify({ type: 'buzzer_press' }));
+            buzzerBtn.disabled = true;
+        });
+
+        function displayOptions(options) {
+            optionsArea.classList.remove('hidden');
+            buzzerArea.classList.add('hidden');
+            optionsArea.innerHTML = '';
+
+            options.forEach(option => {
+                const btn = document.createElement('button');
+                btn.textContent = option;
+                btn.className = 'option-btn w-full p-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg shadow-md';
+                btn.onclick = () => {
+                    gameSocket.send(JSON.stringify({ type: 'answer_selected', answer: option }));
+                    document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+                };
+                optionsArea.appendChild(btn);
+            });
+        }
+
+        function resetRoundUI() {
+            currentBuzzerPlayer = null;
+            resultArea.textContent = '';
+            questionArea.classList.add('hidden');
+            buzzerArea.classList.add('hidden');
+            optionsArea.classList.add('hidden');
+            statusDiv.classList.remove('hidden');
+            buzzerBtn.disabled = false;
+            buzzerBtn.textContent = "BUZZ!";
+            countdownP.textContent = '';
+        }
+
+        function showRoundResult(data) {
+            resultArea.className = "text-2xl font-bold mt-6";
+            const optionButtons = document.querySelectorAll('.option-btn');
+
+            if (optionButtons.length > 0) {
+                optionButtons.forEach(btn => {
+                    if (btn.textContent === data.correct_answer) {
+                        btn.classList.add('correct');
+                    } else {
+                        btn.classList.add('incorrect');
+                    }
+                    btn.disabled = true;
+                });
+            }
+
+            if (data.answered_by === myId) {
+                if (data.is_correct) {
+                    resultArea.textContent = "Correct!";
+                    resultArea.classList.add("text-green-500");
+                } else {
+                    resultArea.textContent = `Wrong! The answer was: ${data.correct_answer}`;
+                    resultArea.classList.add("text-red-500");
+                }
+            } else {
+                if (data.is_correct) {
+                    resultArea.textContent = "Opponent was Correct!";
+                    resultArea.classList.add("text-green-500");
+                } else {
+                    resultArea.textContent = `Opponent was Wrong! Answer: ${data.correct_answer}`;
+                    resultArea.classList.add("text-red-500");
+                }
+            }
+        }
+
+        function updateScores(scores) {
+            if (!myId) return;
+            let opponentId = Object.keys(scores).find(id => id !== myId);
+            myScoreSpan.textContent = scores[myId] || 0;
+            opponentScoreSpan.textContent = opponentId ? (scores[opponentId] || 0) : 0;
+        }
+
+        gameSocket.onclose = function () {
+            statusDiv.textContent = 'Connection lost. Please refresh.';
+            statusDiv.classList.remove('text-blue-600');
+            statusDiv.classList.add('text-red-600');
+        };
+    </script>
+</body>
+</html>

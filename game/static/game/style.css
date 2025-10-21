@@ -1,0 +1,91 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+body {
+    font-family: 'Press Start 2P', cursive;
+    background-color: #1a202c;
+    color: #a0aec0;
+}
+
+.game-container {
+    background-color: #2d3748;
+    border: 2px solid #4a5568;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.game-title {
+    font-size: 3rem;
+    color: #f56565;
+    text-shadow: 0 0 10px #f56565;
+}
+
+.btn-primary {
+    background-color: #f56565;
+    color: #1a202c;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.5rem;
+    border-radius: 10px;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 5px #c53030;
+}
+
+.btn-primary:hover {
+    background-color: #ed8936;
+    box-shadow: 0 5px #dd6b20;
+    transform: translateY(-2px);
+}
+
+.btn-primary:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px #dd6b20;
+}
+
+.buzzer {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background-color: #f56565;
+    color: #1a202c;
+    font-size: 2.5rem;
+    border: 5px solid #c53030;
+    box-shadow: 0 10px #9b2c2c;
+    transition: all 0.1s ease-in-out;
+}
+
+.buzzer:hover {
+    background-color: #ed8936;
+}
+
+.buzzer:active {
+    transform: scale(0.95);
+    box-shadow: 0 5px #9b2c2c;
+}
+
+.option-btn {
+    background-color: #4a5568;
+    color: #a0aec0;
+    border: 2px solid #718096;
+    border-radius: 10px;
+    padding: 15px;
+    font-size: 1.2rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.option-btn:hover {
+    background-color: #718096;
+    color: #1a202c;
+}
+
+.correct {
+    background-color: #48bb78 !important;
+    color: #1a202c !important;
+    border-color: #38a169 !important;
+}
+
+.incorrect {
+    background-color: #f56565 !important;
+    color: #1a202c !important;
+    border-color: #c53030 !important;
+}

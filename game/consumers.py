@@ -98,18 +98,24 @@ class GameConsumer(AsyncWebsocketConsumer):
                 }
             )
 
-            # Wait 3 seconds, then start new round
-            for i in range(3, 0, -1):
-                await self.channel_layer.group_send(
-                    self.room_group_name,
-                    {
-                        'type': 'next_round_tick',
-                        'count': i
-                    }
-                )
-                await asyncio.sleep(1)
+            asyncio.create_task(self.countdown_and_new_round())
 
-            await self.start_new_round()
+    async def countdown_and_new_round(self):
+        """
+        Waits for 3 seconds, broadcasting a countdown, then starts a new round.
+        """
+        await asyncio.sleep(1) # give clients a moment to process the round result
+        for i in range(3, 0, -1):
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'next_round_tick',
+                    'count': i
+                }
+            )
+            await asyncio.sleep(1)
+
+        await self.start_new_round()
 
     @sync_to_async
     def get_random_sentence(self):

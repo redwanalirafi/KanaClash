@@ -1,59 +1,39 @@
-<!DOCTYPE html>
-<html>
+{% extends 'game/base.html' %}
 
-<head>
-    <title>Japanese Game Room</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { font-family: 'Inter', sans-serif; }
+{% block title %}Japanese Game Room{% endblock %}
 
-        .buzzer { transition: all 0.1s ease-in-out; }
-        .buzzer:active { transform: scale(0.95); box-shadow: 0 0 10px rgba(255, 0, 0, 0.7); }
+{% block content %}
+    <h1 class="text-3xl font-bold mb-2">Japanese Quiz Game</h1>
+    <p class="text-gray-500 mb-4">Room Code: <code id="room-code"
+            class="bg-gray-700 px-2 py-1 rounded">{{ room_code }}</code></p>
 
-        .option-btn { transition: background-color 0.2s; }
-
-        .correct { background-color: #28a745 !important; color: white !important; }
-        .incorrect { background-color: #dc3545 !important; color: white !important; }
-    </style>
-</head>
-
-<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen">
-
-    <div id="game-container" class="w-full max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-lg text-center">
-        <h1 class="text-3xl font-bold mb-2">Japanese Quiz Game</h1>
-        <p class="text-gray-500 mb-4">Room Code: <code id="room-code"
-                class="bg-gray-200 px-2 py-1 rounded">{{ room_code }}</code></p>
-
-        <div id="status" class="mb-6 text-lg font-semibold text-blue-600">
-            Waiting for another player...
-        </div>
-
-        <div id="scores" class="hidden flex justify-around mb-6 text-xl">
-            <p>Your Score: <span id="my-score">0</span></p>
-            <p>Opponent's Score: <span id="opponent-score">0</span></p>
-        </div>
-
-        <div id="question-area" class="hidden min-h-[200px] flex flex-col justify-center">
-            <p id="sentence" class="text-4xl font-semibold my-8"></p>
-            <p id="countdown" class="text-6xl font-bold text-red-500 my-4"></p>
-        </div>
-
-        <div id="buzzer-area" class="hidden my-8">
-            <button id="buzzer"
-                class="buzzer w-48 h-48 bg-red-500 hover:bg-red-600 text-white font-bold rounded-full text-4xl shadow-2xl flex items-center justify-center mx-auto disabled:opacity-50 disabled:cursor-not-allowed">
-                BUZZ!
-            </button>
-        </div>
-
-        <div id="options-area" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-
-        <div id="result-area" class="text-2xl font-bold mt-6"></div>
-
+    <div id="status" class="mb-6 text-lg font-semibold text-blue-400">
+        Waiting for another player...
     </div>
 
+    <div id="scores" class="hidden flex justify-around mb-6 text-xl">
+        <p>Your Score: <span id="my-score">0</span></p>
+        <p>Opponent's Score: <span id="opponent-score">0</span></p>
+    </div>
+
+    <div id="question-area" class="hidden min-h-[200px] flex flex-col justify-center">
+        <p id="sentence" class="text-4xl font-semibold my-8"></p>
+        <p id="countdown" class="text-6xl font-bold text-red-500 my-4"></p>
+    </div>
+
+    <div id="buzzer-area" class="hidden my-8">
+        <button id="buzzer"
+            class="buzzer mx-auto disabled:opacity-50 disabled:cursor-not-allowed">
+            BUZZ!
+        </button>
+    </div>
+
+    <div id="options-area" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+    <div id="result-area" class="text-2xl font-bold mt-6"></div>
+
     <script>
-        const roomCode = document.getElementById('room-code').textContent;
+        const roomCode = document.getElementById('room-code').textContent.trim();
         const statusDiv = document.getElementById('status');
         const questionArea = document.getElementById('question-area');
         const sentenceP = document.getElementById('sentence');
@@ -130,7 +110,7 @@
 
                 case 'next_round_tick':
                     resultArea.textContent = `Next round starting in ${data.count}...`;
-                    resultArea.className = "text-2xl font-bold mt-6 text-blue-500";
+                    resultArea.className = "text-2xl font-bold mt-6 text-blue-400";
                     break;
             }
         };
@@ -148,7 +128,7 @@
             options.forEach(option => {
                 const btn = document.createElement('button');
                 btn.textContent = option;
-                btn.className = 'option-btn w-full p-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg shadow-md';
+                btn.className = 'option-btn w-full p-4 font-semibold rounded-lg shadow-md';
                 btn.onclick = () => {
                     gameSocket.send(JSON.stringify({ type: 'answer_selected', answer: option }));
                     document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
@@ -187,18 +167,18 @@
             if (data.answered_by === myId) {
                 if (data.is_correct) {
                     resultArea.textContent = "Correct!";
-                    resultArea.classList.add("text-green-500");
+                    resultArea.classList.add("text-green-400");
                 } else {
                     resultArea.textContent = `Wrong! The answer was: ${data.correct_answer}`;
-                    resultArea.classList.add("text-red-500");
+                    resultArea.classList.add("text-red-400");
                 }
             } else {
                 if (data.is_correct) {
                     resultArea.textContent = "Opponent was Correct!";
-                    resultArea.classList.add("text-green-500");
+                    resultArea.classList.add("text-green-400");
                 } else {
                     resultArea.textContent = `Opponent was Wrong! Answer: ${data.correct_answer}`;
-                    resultArea.classList.add("text-red-500");
+                    resultArea.classList.add("text-red-400");
                 }
             }
         }
@@ -212,9 +192,8 @@
 
         gameSocket.onclose = function () {
             statusDiv.textContent = 'Connection lost. Please refresh.';
-            statusDiv.classList.remove('text-blue-600');
-            statusDiv.classList.add('text-red-600');
+            statusDiv.classList.remove('text-blue-400');
+            statusDiv.classList.add('text-red-500');
         };
     </script>
-</body>
-</html>
+{% endblock %}

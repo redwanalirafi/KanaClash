@@ -22,7 +22,9 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'players': [],
                 'buzzer_pressed_by': None,
                 'question': None,
-                'player_scores': {}
+                'player_scores': {},
+                'round_number': 0,
+                'used_questions': []
             }
 
         room = self.game_state[self.room_group_name]
@@ -118,12 +120,24 @@ class GameConsumer(AsyncWebsocketConsumer):
         await self.start_new_round()
 
     @sync_to_async
-    def get_random_sentence(self):
-        return JapaneseSentence.objects.order_by('?').first()
+    def get_random_sentence(self, used_questions):
+        return JapaneseSentence.objects.exclude(id__in=used_questions).order_by('?').first()
 
     async def start_new_round(self):
         room = self.game_state[self.room_group_name]
-        sentence_obj = await self.get_random_sentence()
+        room['round_number'] += 1
+
+        if room['round_number'] > 10:
+            await self.end_game()
+            return
+
+        sentence_obj = await self.get_random_sentence(room['used_questions'])
+
+        if not sentence_obj:
+            await self.end_game() # End game if no more questions
+            return
+
+        room['used_questions'].append(sentence_obj.id)
 
         if not sentence_obj:
             return
@@ -221,4 +235,24 @@ class GameConsumer(AsyncWebsocketConsumer):
         await self.send(json.dumps({
             'type': 'next_round_tick',
             'count': event['count']
+        }))
+
+    async def end_game(self):
+        room = self.game_state[self.room_group_name]
+        scores = room['player_scores']
+        winner = max(scores, key=scores.get) if scores else None
+
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'game_over',
+                'winner': winner
+            }
+        )
+
+    async def game_over(self, event):
+        await self.send(json.dumps({
+            'type': 'game_over',
+            'winner': event['winner'],
+            'my_id': self.player_id
         }))

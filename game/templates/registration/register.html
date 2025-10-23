@@ -1,0 +1,38 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - KanaClash</title>
+    <link rel="stylesheet" href="{% static 'game/style.css' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-gray-100">
+    <div class="flex w-full max-w-4xl bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="w-1/2 bg-cover bg-center" style="background-image: url('{% static 'game/image1.png' %}');">
+            <!-- Image will be displayed here -->
+        </div>
+        <div class="w-1/2 p-8">
+            <h2 class="text-2xl font-bold text-center mb-6">Register for KanaClash</h2>
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="mb-4">
+                        <label for="{{ field.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">{{ field.label }}:</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                            <p class="text-gray-600 text-xs italic">{{ field.help_text }}</p>
+                        {% endif %}
+                        {% for error in field.errors %}
+                            <p class="text-red-500 text-xs italic">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+                <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full">Register</button>
+            </form>
+            <p class="text-center text-gray-600 text-sm mt-4">Already have an account? <a href="{% url 'login' %}" class="text-blue-500 hover:text-blue-800">Login here</a>.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -112,6 +112,29 @@
                     resultArea.textContent = `Next round starting in ${data.count}...`;
                     resultArea.className = "text-2xl font-bold mt-6 text-blue-400";
                     break;
+
+                case 'game_over':
+                    questionArea.classList.add('hidden');
+                    buzzerArea.classList.add('hidden');
+                    optionsArea.classList.add('hidden');
+                    scoresDiv.classList.add('hidden');
+                    statusDiv.classList.remove('hidden');
+
+                    if (data.winner === myId) {
+                        statusDiv.textContent = "You are the winner!";
+                    } else {
+                        statusDiv.textContent = "You lost. Better luck next time!";
+                    }
+
+                    const playAgainBtn = document.createElement('button');
+                    playAgainBtn.textContent = "Play Again";
+                    playAgainBtn.className = "btn-primary mt-4";
+                    playAgainBtn.onclick = () => {
+                        window.location.href = "/";
+                    };
+                    resultArea.innerHTML = '';
+                    resultArea.appendChild(playAgainBtn);
+                    break;
             }
         };
 

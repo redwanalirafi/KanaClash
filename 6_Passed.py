@@ -24,7 +24,7 @@ def extract_fluency_features(audio_path):
     }
 
 # --- Configure Gemini API ---
-genai.configure(api_key="AIzaSyCXHEcUWzPeq8P4W3Iw6Lh52wazAMKtuGI")
+genai.configure(api_key="XXX")
 
 st.title("🎙️ AI Japanese Speech Feedback App (Gemini Demo)")
 
